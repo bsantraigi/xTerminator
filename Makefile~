@@ -11,12 +11,4 @@ build: mybash.c mypwd.c mycd.c myls.c mymkdir.c myrm.c mytail.c myps.c mymv.c
 	gcc utility.c myps.c -o myps
 	@./mybash
 clean:
-	rm mypwd
-	rm mybash
-	rm mycd
-	rm myls
-	rm mymkdir
-	rm myrm
-	rm mytail
-	rm mymv
-	rm myps
+	test -s mybash || {echo "mybash not there"}
