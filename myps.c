@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <grp.h>
+#include "utility.h"
 
 #define MAX_FILENAME_LEN 256
 extern int errno;
@@ -17,7 +18,17 @@ void quickSort(char **items, int left, int right);
 char **AllocateMem(char **files);
 
 
-int main(){
+int main(int argc, char* argv[]){
+	int uid = (int)getuid();
+	// printf("Current UID: %d\n", uid);
+	int checkUID = 1;
+	if(argc >= 1){
+		argv[0] = trim(argv[0]);
+		if(strcmp(argv[0], "-a") == 0){
+			checkUID = 0;
+			printf("%s\n", "Hi");
+		}
+	}
 	double hertz = sysconf(_SC_CLK_TCK);
 	char *cwd = "/proc";
 	// getcwd(cwd,50);
@@ -46,6 +57,36 @@ int main(){
 			if(atoi(rddir->d_name) <= 0){
 				continue;
 			}
+
+			//UID Check
+			if(checkUID != 0){
+				char statusFile[20];
+				sprintf((char*)statusFile, "/proc/%s/status", rddir->d_name);
+				FILE* status_f = fopen(statusFile,"r");
+				if(status_f == NULL){
+					continue;
+				}
+				int line = 0;
+				char *reader;
+				reader = (char *)malloc(256*sizeof(char));
+				while(line < 8){
+					fgets((char*)reader, 256, status_f);
+
+					line++;
+				}
+				
+				reader = strtok(reader,"\t");
+				
+				reader = strtok(NULL, "\t");
+				
+				int cuid = atoi(reader);
+				fclose(status_f);
+
+
+				if(uid != cuid){
+					continue;
+				}
+			}
 			if((count%10) == 0){
 				files = AllocateMem(files);
 			}
@@ -57,8 +98,9 @@ int main(){
 			FILE* cmd = fopen(cmdLine, "r");
 			fgets((char*)cmdLine, 512, cmd);
 			fclose(cmd);
-
+			// printf("%d check\n", checkUID);
 			FILE* pStat = fopen(procDir,"r");
+			// perror("fopen");
 			if(pStat != NULL){
 				sprintf(files[count], "%s", rddir->d_name);
 				// printf("%s\n", procDir);
@@ -124,6 +166,8 @@ int main(){
 				/*char all[1024];
 				fgets((char*)all, 1024, pStat);*/
 				count++;
+			}else{
+				perror("fopen");
 			}
 			fclose(pStat);
 		}
